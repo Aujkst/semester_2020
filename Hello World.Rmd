@@ -2,13 +2,13 @@
 title: "时间序列分析"
 author: "shake.it"
 output:
-  html_document: default
-  word_document: default
   pdf_document:
     includes:
       in_header: header.tex
     keep_tex: yes   
     latex_engine: xelatex
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
