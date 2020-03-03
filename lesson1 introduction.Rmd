@@ -1,0 +1,69 @@
+---
+title: "Time Series Analysis"
+author: "shake_it"
+output:
+  
+  html_document: default
+  word_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 方法
+
+- *描述性时序分析*
+- *统计时序分析*（频域分析方法 + 时域分析方法）
+
+# 生成数据
+
+从2005年1月开始的月度数据。`start`指定起始读入时间，`frequency`指定序列每年读入的数据频率。
+```{r }
+price <- c(101, 82, 66, 35, 31, 7)
+
+price <- ts(price, start = c(2005, 1), frequency = 12)
+```
+
+# 例1-1
+
+读入1884-1939年英格兰和威尔士小麦平均亩产量数据`file1.csv`
+```{r }
+x <- read.csv("D:/Documents/UIBE/6/TimeSeries/file1.csv")
+head(x)
+```
+截取1925年之后的数据`subset`
+```{r }
+z <- subset(x, year > 1925, select = yield)
+head(z)
+```
+对`yield`序列进行对数变换，并将对数序列和原序列值导出，保存为数据文件`yield.csv`。
+```{r }
+ln_yield <- log(x$yield)
+x_new <- data.frame(x,ln_yield) #新数据框
+write.csv(x_new, file = "D:/Documents/UIBE/6/TimeSeries/yield.csv", row.names = F)
+```
+
+## 缺失值插值
+
+R中缺失值用`NA`表示。常用的插值方法：**线性插值**和**样条插值**
+```{r message=FALSE}
+library(zoo)
+a <- 1:7
+a[4] <- NA
+cat("a: ", a)
+```
+```{r}
+y1 <- na.approx(a)
+y2<-na.spline(a)
+cat(" ", y1, "\n ", y2)
+```
+
+
+
+
