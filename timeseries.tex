@@ -134,8 +134,9 @@
 \begin{document}
 \maketitle
 
-\hypertarget{ux7b2cux4e00ux5468}{%
-\section{第一周}\label{ux7b2cux4e00ux5468}}
+\hypertarget{ux7b2cux4e00ux7ae0-ux65f6ux95f4ux5e8fux5217ux5206ux6790ux7b80ux4ecb}{%
+\section{第一章
+时间序列分析简介}\label{ux7b2cux4e00ux7ae0-ux65f6ux95f4ux5e8fux5217ux5206ux6790ux7b80ux4ecb}}
 
 \hypertarget{ux65b9ux6cd5}{%
 \paragraph{方法}\label{ux65b9ux6cd5}}
@@ -160,6 +161,8 @@
 \NormalTok{price <-}\StringTok{ }\KeywordTok{ts}\NormalTok{(price, }\DataTypeTok{start =} \KeywordTok{c}\NormalTok{(}\DecValTok{2005}\NormalTok{, }\DecValTok{1}\NormalTok{), }\DataTypeTok{frequency =} \DecValTok{12}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \hypertarget{ux4f8b1-1}{%
 \paragraph{例1-1}\label{ux4f8b1-1}}
@@ -212,6 +215,8 @@
 \end{Highlighting}
 \end{Shaded}
 
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
 \hypertarget{ux7f3aux5931ux503cux63d2ux503c}{%
 \paragraph{缺失值插值}\label{ux7f3aux5931ux503cux63d2ux503c}}
 
@@ -245,9 +250,12 @@ R中缺失值用\texttt{NA}表示。常用的插值方法：\textbf{线性插值
 
 \begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
-\hypertarget{ux7b2cux4e8cux5468-ux65f6ux95f4ux5e8fux5217ux6570ux636eux7684ux9884ux5904ux7406}{%
-\section{第二周
-时间序列数据的预处理}\label{ux7b2cux4e8cux5468-ux65f6ux95f4ux5e8fux5217ux6570ux636eux7684ux9884ux5904ux7406}}
+\hypertarget{ux7b2cux4e8cux7ae0-ux65f6ux95f4ux5e8fux5217ux6570ux636eux7684ux9884ux5904ux7406}{%
+\section{第二章
+时间序列数据的预处理}\label{ux7b2cux4e8cux7ae0-ux65f6ux95f4ux5e8fux5217ux6570ux636eux7684ux9884ux5904ux7406}}
+
+\hypertarget{ux5e73ux7a33ux6027ux68c0ux9a8c}{%
+\paragraph{平稳性检验}\label{ux5e73ux7a33ux6027ux68c0ux9a8c}}
 
 \hypertarget{ux7edfux8ba1ux6027ux8d28}{%
 \paragraph{统计性质}\label{ux7edfux8ba1ux6027ux8d28}}
@@ -274,18 +282,23 @@ R中缺失值用\texttt{NA}表示。常用的插值方法：\textbf{线性插值
   \]
 \end{itemize}
 
-\hypertarget{ux65f6ux5e8fux56feux4e0eux81eaux76f8ux5173ux56fe}{%
-\paragraph{时序图与自相关图}\label{ux65f6ux5e8fux56feux4e0eux81eaux76f8ux5173ux56fe}}
+\hypertarget{ux56fe}{%
+\paragraph{图}\label{ux56fe}}
 
-\hypertarget{ux65f6ux5e8fux56fe}{%
-\subparagraph{时序图}\label{ux65f6ux5e8fux56fe}}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  时序图
+\end{enumerate}
+
+1884-1890年英格兰和威尔士地区小麦平均亩产量
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{yield <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\FloatTok{15.2}\NormalTok{,}\FloatTok{16.9}\NormalTok{,}\FloatTok{15.3}\NormalTok{,}\FloatTok{14.9}\NormalTok{,}\FloatTok{15.7}\NormalTok{,}\FloatTok{15.1}\NormalTok{,}\FloatTok{16.7}\NormalTok{)}
 \NormalTok{yield <-}\StringTok{ }\KeywordTok{ts}\NormalTok{(yield, }\DataTypeTok{start =} \DecValTok{1884}\NormalTok{)}
-\KeywordTok{plot}\NormalTok{(yield, }\DataTypeTok{main =} \StringTok{"1884-1890年英格兰和威尔士地区小麦平均亩产量"}\NormalTok{, }
-     \DataTypeTok{xlab =} \StringTok{"年份"}\NormalTok{, }\DataTypeTok{ylab=}\StringTok{"亩产量"}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(yield,}\DataTypeTok{xlab =} \StringTok{"year"}\NormalTok{, }\DataTypeTok{ylab=}\StringTok{"yield"}\NormalTok{)}
 \KeywordTok{abline}\NormalTok{(}\DataTypeTok{v =} \KeywordTok{c}\NormalTok{(}\DecValTok{1885}\NormalTok{,}\DecValTok{1889}\NormalTok{), }
        \DataTypeTok{h =} \KeywordTok{c}\NormalTok{(}\FloatTok{15.5}\NormalTok{,}\FloatTok{16.5}\NormalTok{), }
        \DataTypeTok{lty =} \DecValTok{2}\NormalTok{)}
@@ -318,8 +331,13 @@ R中缺失值用\texttt{NA}表示。常用的插值方法：\textbf{线性插值
 \end{Highlighting}
 \end{Shaded}
 
-\hypertarget{ux81eaux76f8ux5173ux56fe}{%
-\subparagraph{自相关图}\label{ux81eaux76f8ux5173ux56fe}}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  自相关图
+\end{enumerate}
 
 自相关图是一个平面悬垂线图，横坐标表示延迟期数，纵坐标表示自相关系数，悬垂线表示自相关系数的大小。
 
@@ -341,6 +359,8 @@ R中缺失值用\texttt{NA}表示。常用的插值方法：\textbf{线性插值
   \textbf{自相关图检验}：平稳序列通常具有短期相关性。该性质用自相关系数来描述就是随着延迟期数的增加，平稳序列的自相关系数会很快地衰减向零。
 \end{itemize}
 
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
 \hypertarget{ux4f8b2.1-ux68c0ux9a8c1964ux5e74-1999ux5e74ux4e2dux56fdux7eb1ux5e74ux4ea7ux91cfux5e8fux5217ux7684ux5e73ux7a33ux6027}{%
 \paragraph{例2.1
 检验1964年-1999年中国纱年产量序列的平稳性}\label{ux4f8b2.1-ux68c0ux9a8c1964ux5e74-1999ux5e74ux4e2dux56fdux7eb1ux5e74ux4ea7ux91cfux5e8fux5217ux7684ux5e73ux7a33ux6027}}
@@ -350,7 +370,7 @@ R中缺失值用\texttt{NA}表示。常用的插值方法：\textbf{线性插值
 \KeywordTok{library}\NormalTok{(readr)}
 \NormalTok{sha <-}\StringTok{ }\KeywordTok{read_csv}\NormalTok{(}\StringTok{"timeseries_data/file4.csv"}\NormalTok{)}
 \NormalTok{output <-}\StringTok{ }\KeywordTok{ts}\NormalTok{(sha}\OperatorTok{$}\NormalTok{output, }\DataTypeTok{start =} \DecValTok{1964}\NormalTok{)}
-\KeywordTok{plot}\NormalTok{(output, }\DataTypeTok{main =} \StringTok{"时序图"}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(output)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -360,14 +380,250 @@ R中缺失值用\texttt{NA}表示。常用的插值方法：\textbf{线性插值
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{acf}\NormalTok{(output, }\DataTypeTok{lag =} \DecValTok{25}\NormalTok{,}
-    \DataTypeTok{main =} \StringTok{"自相关图"}\NormalTok{)}
+\KeywordTok{acf}\NormalTok{(output, }\DataTypeTok{lag =} \DecValTok{25}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
 \includegraphics{timeseries_files/figure-latex/2.1acf-1.pdf}
 
 自相关图衰减缓慢，非平稳。
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+\hypertarget{ux7eafux968fux673aux6027ux68c0ux9a8c}{%
+\paragraph{纯随机性检验}\label{ux7eafux968fux673aux6027ux68c0ux9a8c}}
+
+纯随机序列就是白噪声， \[
+(1) \quad \mathbb{E}X_t = \mu , \quad \forall\,t\in T
+\] \[
+(2) \quad \gamma(t,s) = \left \{
+    \begin{array}{clc}
+      \sigma^2 & , & t = s \\
+          0    & , & t \ne s \\
+    \end{array}
+  \right. ,\quad \forall\,t,s\in T
+\]
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+例2.4 随机产生长度为1000的标准正态分布的白噪声序列，并绘制时序图
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{white_noise <-}\StringTok{ }\KeywordTok{rnorm}\NormalTok{(}\DecValTok{1000}\NormalTok{)}
+\NormalTok{white_noise <-}\StringTok{ }\KeywordTok{ts}\NormalTok{(white_noise)}
+\KeywordTok{plot}\NormalTok{(white_noise)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{timeseries_files/figure-latex/ex2.4-1.pdf}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+\hypertarget{ux767dux566aux58f0ux5e8fux5217ux7684ux6027ux8d28}{%
+\paragraph{白噪声序列的性质}\label{ux767dux566aux58f0ux5e8fux5217ux7684ux6027ux8d28}}
+
+\begin{itemize}
+\tightlist
+\item
+  纯随机性（没有记忆） \[
+  \gamma(k) = 0,\quad\forall\,k\ne0
+  \]
+\item
+  方差齐性 \[
+  \mathbb{D}X_t = \gamma(0) = \sigma^2,\quad\forall\,k\ne0
+  \]
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+例2.4续 白噪声序列的\textbf{样本}自相关图
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{acf}\NormalTok{(white_noise)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{timeseries_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+纯随机序列的样本相关系数不会绝对为零，而在0附近随机波动
+
+\hypertarget{barlettux5b9aux7406}{%
+\paragraph{Barlett定理}\label{barlettux5b9aux7406}}
+
+纯随机序列，观察期数为\(n\)，延迟非零期的样本自相关系数\textbf{近似服从}：
+\[
+\hat{\rho}_k \, \dot{\sim} \, N(0,\frac{1}{n}),\quad \forall\,k\ne0
+\]
+
+**** 纯随机性的检验
+
+对于给定的最大延迟阶数m，\(H_0:\,\rho_1=\rho_2=\cdots=\rho_m=0,\,\,\forall\,m\geqslant1\)
+
+\begin{itemize}
+\tightlist
+\item
+  Q统计量（BP）
+\end{itemize}
+
+\[
+Q = n\sum\limits_{k=1}^{m}\hat{\rho}^2_k\,\sim\,\chi^2(m)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  LB统计量 \[
+  LB = n(n+2)\sum\limits_{k=1}^{m}\left(\frac{\hat{\rho}_k}{n-k}\right)\,\sim\,\chi^2(m)
+  \]
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+例2.4续 计算白噪声序列延迟6期、延迟12期的\textbf{Q检验}结果
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{Box.test}\NormalTok{(white_noise, }\DataTypeTok{lag =} \DecValTok{6}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Box-Pierce test
+## 
+## data:  white_noise
+## X-squared = 3.4287, df = 6, p-value = 0.7534
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{Box.test}\NormalTok{(white_noise, }\DataTypeTok{type =} \StringTok{"Ljung-Box"}\NormalTok{, }\DataTypeTok{lag =} \DecValTok{6}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Box-Ljung test
+## 
+## data:  white_noise
+## X-squared = 3.4506, df = 6, p-value = 0.7505
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{Box.test}\NormalTok{(white_noise, }\DataTypeTok{lag =} \DecValTok{12}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Box-Pierce test
+## 
+## data:  white_noise
+## X-squared = 15.076, df = 12, p-value = 0.2373
+\end{verbatim}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+例2.5
+对1950年------1998年北京市城乡居民定期储蓄所占比例序列的平稳性与纯随机性进行检验
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"timeseries_data/file7.csv"}\NormalTok{, }
+                 \DataTypeTok{sep =} \StringTok{","}\NormalTok{, }\DataTypeTok{header =}\NormalTok{ T)}
+\NormalTok{prop <-}\StringTok{ }\KeywordTok{ts}\NormalTok{(data}\OperatorTok{$}\NormalTok{prop, }\DataTypeTok{start =} \DecValTok{1950}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(prop)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{timeseries_files/figure-latex/ex2.5-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{acf}\NormalTok{(prop)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{timeseries_files/figure-latex/ex2.5-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{) \{}
+  \KeywordTok{print}\NormalTok{(}\KeywordTok{Box.test}\NormalTok{(prop, }\DataTypeTok{lag =} \DecValTok{6}\OperatorTok{*}\NormalTok{i))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Box-Pierce test
+## 
+## data:  prop
+## X-squared = 68.724, df = 6, p-value = 7.467e-13
+## 
+## 
+##  Box-Pierce test
+## 
+## data:  prop
+## X-squared = 74.74, df = 12, p-value = 4.115e-11
+\end{verbatim}
+
+拒绝原假设，该序列不属于白噪声序列
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+\hypertarget{ux7b2cux4e09ux7ae0-ux5e73ux7a33ux65f6ux95f4ux5e8fux5217ux5206ux6790}{%
+\section{第三章
+平稳时间序列分析}\label{ux7b2cux4e09ux7ae0-ux5e73ux7a33ux65f6ux95f4ux5e8fux5217ux5206ux6790}}
+
+\hypertarget{ux65b9ux6cd5ux6027ux5de5ux5177}{%
+\paragraph{方法性工具}\label{ux65b9ux6cd5ux6027ux5de5ux5177}}
+
+\begin{itemize}
+\item
+  差分运算
+
+  \begin{itemize}
+  \item
+    一阶差分 \(\nabla x_t = x_t - x_{t-1}\)
+  \item
+    p阶差分 \(\nabla^p x_t = \nabla^{p-1}x_t - \nabla^{p-1}x_{t-1}\)
+  \item
+    k步差分 \(\nabla_kx_t = x_t - x_{t-k}\)
+  \end{itemize}
+\item
+  延迟算子 \(B^px_t = x_{t-p}\)
+\end{itemize}
+
+\[
+(1-B)^n = \sum\limits_{i=0}^{n}(-1)^iC^i_nB^i
+\] p阶差分可以表示为 \[
+\nabla^p x_t = (1-B)^px_t = \sum\limits_{i=0}^{p}(-1)^iC^i_pB^ix_{t-i}
+\]
+
+k步差分 \[
+\nabla_kx_t = x_t - x_{t-k} = (1-B^k)x_t
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  线性差分方程
+\end{itemize}
+
+\hypertarget{armaux6a21ux578b}{%
+\paragraph{ARMA模型}\label{armaux6a21ux578b}}
+
+\hypertarget{ux5e73ux7a33ux5e8fux5217ux5efaux6a21}{%
+\paragraph{平稳序列建模}\label{ux5e73ux7a33ux5e8fux5217ux5efaux6a21}}
+
+\hypertarget{ux5e8fux5217ux9884ux6d4b}{%
+\paragraph{序列预测}\label{ux5e8fux5217ux9884ux6d4b}}
 
 
 \end{document}
