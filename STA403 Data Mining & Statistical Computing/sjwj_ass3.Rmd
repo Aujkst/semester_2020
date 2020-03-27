@@ -1,0 +1,102 @@
+---
+title: STA403-1 第三次作业
+author: 金科 201756010
+output:
+  
+  html_document: default
+  word_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 第五周任务：P182 第8题
+
+通过模拟数据集学习最有自己选择法
+
+（a）使用`rnorm()`生成预测变量$X$和噪声向量$\varepsilon$。
+```{r 1a}
+set.seed(1)
+x <- rnorm(100)
+noise <- rnorm(100)
+```
+
+（b）依据以下模型产生长度为$n=100$的响应变量$Y$
+$$
+Y = \beta_0 + \beta_1X + \beta_2X^2 + \beta_3X^3 + \varepsilon
+$$
+其中，$\beta_0$、$\beta_1$、$\beta_2$和$\beta_3$是自己选的常数
+```{r 1b}
+y <- 9 + 2 * x + 5 * x^2 + 13 * x^3 + noise
+plot(x, y, xlab = "X", ylab = "Y")
+```
+
+（c）使用最优子集选择法，从包含$X$、$X^2$到$X^{10}$的模型中根据$C_p$、BIC和调整R方选出最优……
+```{R 1c, message=FALSE, warning=FALSE}
+library(leaps)
+library(ggplot2)
+```
+```{r }
+result_full <- regsubsets(y ~ ., data = data.frame(poly(x, 10, raw = T), y), nvmax = 10)
+result_full_summary <- summary(result_full)
+
+
+```
+
+```{r }
+p1 <- ggplot(coef, aes(x = coef_1, y = coef_2)) + 
+    geom_abline(intercept = 0, slope = 1) + 
+    geom_text(aes(0, -3.5, label = "y = x")) + 
+    geom_vline(xintercept = 0, color = "blue") + 
+    geom_hline(yintercept = 0, color = "blue") +
+    geom_point(color = "red") + 
+    geom_text(aes(y = coef_2 + .5, label = names(Boston)[-1])) + 
+    labs(x = "Simple Linear Models", 
+         y = "Multiple Linear Model",
+         title = "Coefficients", 
+         subtitle = "")
+```
+
+
+```{r }
+names(result_full_summary)
+```
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+
+### 第五周任务：P182 第9题
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
