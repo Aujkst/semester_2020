@@ -1,0 +1,323 @@
+---
+title: "Time Series Analysis"
+author: "shake_it"
+output:
+  
+  html_document: default
+  word_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# 第一章 时间序列分析简介
+
+#### 方法
+
+- **描述性时序分析**
+- **统计时序分析**（频域分析方法 + 时域分析方法）
+
+#### 生成数据
+
+从2005年1月开始的月度数据。`start`指定起始读入时间，`frequency`指定序列每年读入的数据频率。
+```{r }
+price <- c(101, 82, 66, 35, 31, 7)
+
+price <- ts(price, start = c(2005, 1), frequency = 12)
+```
+
+***
+
+#### 例1-1
+
+读入1884-1939年英格兰和威尔士小麦平均亩产量数据`file1.csv`
+```{r }
+x <- read.csv("D:/Documents/UIBE/6/TimeSeries/file1.csv")
+head(x)
+```
+截取1925年之后的数据`subset`
+```{r }
+z <- subset(x, year > 1925, select = yield)
+head(z)
+```
+对`yield`序列进行对数变换，并将对数序列和原序列值导出，保存为数据文件`yield.csv`。
+```{r }
+ln_yield <- log(x$yield)
+x_new <- data.frame(x,ln_yield) #新数据框
+write.csv(x_new, file = "D:/Documents/UIBE/6/TimeSeries/yield.csv", row.names = F)
+```
+
+***
+
+#### 缺失值插值
+
+R中缺失值用`NA`表示。常用的插值方法：**线性插值**和**样条插值**
+```{r message=FALSE}
+library(zoo)
+a <- 1:7
+a[4] <- NA
+cat("a: ", a)
+```
+```{r}
+y1 <- na.approx(a)
+y2<-na.spline(a)
+cat(" ", y1, "\n ", y2)
+```
+
+***
+
+# 第二章 时间序列数据的预处理
+
+#### 平稳性检验
+
+#### 统计性质
+
+平稳时间序列**自协方差**函数和**自相关**系数只依赖于时间的平移长度而与时间的起止点无关
+
+- **延迟$k$自协方差函数**
+$$
+\gamma(k) = \gamma(t,t+k),\quad\forall\,k\in\mathbb{N}
+$$
+- **延迟$k$自相关系数**
+$$
+\rho_k = \frac{\gamma(t,t+k)}{\sqrt{DX_t\cdot DX_{t+1}}} = \frac{\gamma(k)}{\gamma(0)}
+$$
+- **估计**均值函数
+$$
+\hat{\mu} = \bar{x} = \frac{\sum\limits_{i=1}^{n}x_i}{n}
+$$
+- **估计**延迟$k$自相关系数
+$$
+\hat{\rho_k} = \frac{\sum\limits_{i=1}^{n-k}(x_i-\bar{x})(x_{i+k}-\bar{x})}{\sum\limits_{i=1}^{n}(x_i-\bar{x})^2},\quad\forall\,0<k<n
+$$
+
+#### 图
+
+1. 时序图
+
+1884-1890年英格兰和威尔士地区小麦平均亩产量
+```{r }
+yield <- c(15.2,16.9,15.3,14.9,15.7,15.1,16.7)
+yield <- ts(yield, start = 1884)
+plot(yield,xlab = "year", ylab="yield")
+abline(v = c(1885,1889), 
+       h = c(15.5,16.5), 
+       lty = 2)
+```
+
+`plot`各项参数：
+```{r message=FALSE, warning=FALSE}
+if(FALSE) {
+  type = "p"  # 点
+         "l"  # 线
+         "b"  # 点连线
+         "o"  # 线穿过点
+         "h"  # 悬垂线
+         "s"  # 阶梯线
+  pch = 17 # 点的符号
+  lty = 2  # 连线的类型
+  lwd = 2  # 连线的宽度（默认宽度的2倍）
+  col = 1  # col = "black"
+  col = 2  # col = "red"
+  col = 3  # col = "green"
+  col = 4  # col = "blue"
+  xlim = c(1886,1890)
+  ylim = c(15,16) # 指定坐标轴范围
+}
+```
+
+2. 自相关图
+
+自相关图是一个平面悬垂线图，横坐标表示延迟期数，纵坐标表示自相关系数，悬垂线表示自相关系数的大小。
+```{r }
+acf(yield) #虚线为自相关系数 2倍标准差位置
+```
+
+#### 平稳性的检验（图检验方法）
+
+- **时序图检验**：始终在一个常数值附近随机波动，而且波动的范围有界、无明显趋势及周期特征。
+
+- **自相关图检验**：平稳序列通常具有短期相关性。该性质用自相关系数来描述就是随着延迟期数的增加，平稳序列的自相关系数会很快地衰减向零。
+
+***
+
+#### 例2.1 检验1964年-1999年中国纱年产量序列的平稳性
+```{r ex2.1, message=FALSE}
+library(readr)
+sha <- read_csv("timeseries_data/file4.csv")
+output <- ts(sha$output, start = 1964)
+plot(output)
+```
+
+时序图有递增趋势，非平稳
+```{r 2.1acf}
+acf(output, lag = 25)
+```
+
+自相关图衰减缓慢，非平稳。
+
+***
+
+#### 纯随机性检验
+
+纯随机序列就是白噪声，
+$$
+(1) \quad \mathbb{E}X_t = \mu , \quad \forall\,t\in T
+$$
+$$
+(2) \quad \gamma(t,s) = \left \{
+    \begin{array}{clc}
+      \sigma^2 & , & t = s \\
+          0    & , & t \ne s \\
+    \end{array}
+  \right. ,\quad \forall\,t,s\in T
+$$
+
+***
+
+例2.4 随机产生长度为1000的标准正态分布的白噪声序列，并绘制时序图
+```{r ex2.4}
+white_noise <- rnorm(1000)
+white_noise <- ts(white_noise)
+plot(white_noise)
+```
+
+***
+
+#### 白噪声序列的性质
+
+- 纯随机性（没有记忆）
+$$
+\gamma(k) = 0,\quad\forall\,k\ne0
+$$
+- 方差齐性
+$$
+\mathbb{D}X_t = \gamma(0) = \sigma^2,\quad\forall\,k\ne0
+$$
+
+***
+
+例2.4续 白噪声序列的**样本**自相关图
+```{r }
+acf(white_noise)
+```
+
+***
+
+纯随机序列的样本相关系数不会绝对为零，而在0附近随机波动
+
+#### Barlett定理
+
+纯随机序列，观察期数为$n$，延迟非零期的样本自相关系数**近似服从**：
+$$
+\hat{\rho}_k \, \dot{\sim} \, N(0,\frac{1}{n}),\quad \forall\,k\ne0
+$$
+
+#### 纯随机性的检验
+
+对于给定的最大延迟阶数m，$H_0:\,\rho_1=\rho_2=\cdots=\rho_m=0,\,\,\forall\,m\geqslant1$
+
+- Q统计量（BP）
+
+$$
+Q = n\sum\limits_{k=1}^{m}\hat{\rho}^2_k\,\sim\,\chi^2(m)
+$$
+
+- LB统计量
+$$
+LB = n(n+2)\sum\limits_{k=1}^{m}\left(\frac{\hat{\rho}_k}{n-k}\right)\,\sim\,\chi^2(m)
+$$
+
+***
+
+例2.4续 计算白噪声序列延迟6期、延迟12期的**Q检验**结果
+```{r }
+Box.test(white_noise, lag = 6)
+```
+
+```{r }
+Box.test(white_noise, type = "Ljung-Box", lag = 6)
+```
+
+```{r }
+Box.test(white_noise, lag = 12)
+```
+
+***
+
+例2.5 对1950年——1998年北京市城乡居民定期储蓄所占比例序列的平稳性与纯随机性进行检验
+```{r ex2.5}
+data <- read.csv("timeseries_data/file7.csv", 
+                 sep = ",", header = T)
+prop <- ts(data$prop, start = 1950)
+plot(prop)
+acf(prop)
+for (i in 1:2) {
+  print(Box.test(prop, lag = 6*i))
+}
+```
+
+拒绝原假设，该序列不属于白噪声序列
+
+***
+
+# 第三章 平稳时间序列分析
+
+#### 方法性工具
+
+- 差分运算
+
+  - 一阶差分 $\nabla x_t = x_t - x_{t-1}$
+  
+  - p阶差分 $\nabla^p x_t = \nabla^{p-1}x_t - \nabla^{p-1}x_{t-1}$
+  
+  - k步差分 $\nabla_kx_t = x_t - x_{t-k}$
+  
+- 延迟算子 $B^px_t = x_{t-p}$
+
+$$
+(1-B)^n = \sum\limits_{i=0}^{n}(-1)^iC^i_nB^i
+$$
+p阶差分可以表示为
+$$
+\nabla^p x_t = (1-B)^px_t = \sum\limits_{i=0}^{p}(-1)^iC^i_pB^ix_{t-i}
+$$
+
+k步差分
+$$
+\nabla_kx_t = x_t - x_{t-k} = (1-B^k)x_t
+$$
+
+- 线性差分方程
+
+#### ARMA模型
+
+#### 平稳序列建模
+
+#### 序列预测
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
