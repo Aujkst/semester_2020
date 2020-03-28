@@ -31,11 +31,12 @@ noise <- rnorm(100)
 $$
 Y = \beta_0 + \beta_1X + \beta_2X^2 + \beta_3X^3 + \varepsilon
 $$
-其中，$\beta_0$、$\beta_1$、$\beta_2$和$\beta_3$是自己选的常数
+其中，$\beta_0=9$、$\beta_1=2$、$\beta_2=5$和$\beta_3=13$是自己选的常数
 ```{r 1b}
 y <- 9 + 2 * x + 5 * x^2 + 13 * x^3 + noise
 plot(x, y, xlab = "X", ylab = "Y")
 ```
+
 
 （c）使用最优子集选择法，从包含$X$、$X^2$到$X^{10}$的模型中根据$C_p$、BIC和调整R方选出最优……
 ```{R 1c, message=FALSE, warning=FALSE}
@@ -43,45 +44,131 @@ library(leaps)
 library(ggplot2)
 ```
 ```{r }
-result_full <- regsubsets(y ~ ., data = data.frame(poly(x, 10, raw = T), y), nvmax = 10)
-result_full_summary <- summary(result_full)
+# 数据准备
+data <- data.frame(poly(x, 10, raw = T), y)
 
+# 提取信息绘图
+plotf <- function(result) {
+  rstBest <- summary(result)
+  pBestBIC <- ggplot(data.frame(M = 1:10, BIC = rstBest$bic), 
+                     aes(x = M, y = BIC)) +
+    geom_line() + geom_point() + 
+    labs(x = NULL, y = NULL, title = "BIC") + 
+    geom_point(aes(which.min(rstBest$bic), min(rstBest$bic)), 
+               col="red", size=3)
+  
+  pBestAdjR <- ggplot(data.frame(M = 1:10, AdjR2 = rstBest$adjr2), 
+                      aes(x = M, y = AdjR2)) + 
+    geom_line() + geom_point() + 
+    labs(x = NULL, y = NULL, title = "Adj R2") + 
+    geom_point(aes(which.max(rstBest$adjr2), max(rstBest$adjr2)), 
+               col="red", size=3)
+  
+  pBestCp <- ggplot(data.frame(M = 1:10, Cp = rstBest$cp),
+                    aes(x = M, y = Cp)) + 
+    geom_line()+ geom_point() + 
+    labs(x = NULL, y = NULL, title = "Cp") + 
+    geom_point(aes(which.min(rstBest$cp), min(rstBest$cp)), 
+               col = "red", size = 3)
+  
+  cowplot::plot_grid(pBestCp, pBestBIC, pBestAdjR, ncol = 3)
+}
 
+```
+```{r }
+# 最优子集选择法
+result_sub <- regsubsets(y ~ ., data = data, nvmax = 10)
+plotf(result_sub)
+```
+
+如上图所示，综合三项评价指标，可以认为当加入的预测变量数量为4时模型最优，并计算此时各系数的估计值
+```{r }
+coef(result_sub, 4)
+```
+
+（d）使用向前逐步选择法和向后逐步选择法重复（c）中步骤，比较答案
+```{r 1d}
+# 向前逐步选择法
+result_fwd <- regsubsets(y ~ ., data = data, nvmax = 10, method = "forward")
+plotf(result_fwd)
 ```
 
 ```{r }
-p1 <- ggplot(coef, aes(x = coef_1, y = coef_2)) + 
-    geom_abline(intercept = 0, slope = 1) + 
-    geom_text(aes(0, -3.5, label = "y = x")) + 
-    geom_vline(xintercept = 0, color = "blue") + 
-    geom_hline(yintercept = 0, color = "blue") +
-    geom_point(color = "red") + 
-    geom_text(aes(y = coef_2 + .5, label = names(Boston)[-1])) + 
-    labs(x = "Simple Linear Models", 
-         y = "Multiple Linear Model",
-         title = "Coefficients", 
-         subtitle = "")
+# 向后逐步选择法
+result_bwd <- regsubsets(y ~ ., data = data, nvmax = 10, method = "backward")
+plotf(result_bwd)
+```
+```{r }
+coef(result_fwd, 4)
+coef(result_bwd, 4)
+```
+
+向前逐步选择法与最优子集选择法的结果一致，向后逐步选择法将$X^5$项替换为了$X^9$，但是两者的系数均很小，可以认为对模型的影响微乎其微；其他参数与原模型系数非常接近。
+
+（e）使用lasso拟合数据，使用交叉验证选择参数$\lambda$的值
+```{r 1e, message=FALSE, warning=FALSE}
+library(glmnet)
+```
+```{r }
+grid <- 10^seq(-2, 2, length = 100)
+data <- as.matrix(data)
+result_lasso <- cv.glmnet(data[, -11], data[, 11], alpha = 1, lambda = grid)
+plot(result_lasso)
+```
+
+
+```{r}
+lambda_min <- result_lasso$lambda.min
+lasso_coef <- predict(result_lasso, type = "coefficients", s = lambda_min)[1:10, ]
+lasso_coef[lasso_coef != 0]
+```
+lasso回归剔除了$X^6$、$X^8$和$X^{10}$三项。
+```{r }
+lasso_coef[lasso_coef > 0.05]
+```
+不考虑变量系数远小于1的情况，lasso回归最终选择了$X$、$X^2$和$X^3$三项，与前述几种模型基本一致，且与原模型比较接近。
+
+```{r}
+names(result_lasso)
+```
+
+（f）现在依据模型$Y = \beta_0 + \beta_7X^7 + \varepsilon$产生响应变量$Y$，使用最优子集选择法和lasso
+
+```{r 1f bestsub}
+y <- 9 + 2.3 * x^7 + noise
+data <- data.frame(poly(x, 10, raw = T), y)
+
+# 最优子集选择法
+result_sub <- regsubsets(y ~ ., data = data, nvmax = 10)
+plotf(result_sub)
+```
+```{r 1f lasso}
+# lasso
+data <- as.matrix(data)
+result_lasso <- cv.glmnet(data[, -11], data[, 11], alpha = 1, lambda = grid)
+plot(result_lasso)
+```
+```{r }
+# 最优子集选择法系数
+coef <- lapply(c(1,2,4), function(x) coef(result_sub, x))
+
+# lasso回归系数
+lasso_min <- result_lasso$lambda.min
+coef_lasso <- predict(result_lasso, type = "coefficients", s = lasso_min)[1:10,]
+coef <- c(coef, list(coef_lasso[coef_lasso > 0.5]))
+
+names(coef) <- c(paste("Best Subset Selection", 1:3), "Lasso")
 ```
 
 
 ```{r }
-names(result_full_summary)
+coef
 ```
-```{r}
-```
+Lasso回归和最优子集选择的BIC和调整R方准则虽然多加入了变量，但是这些无关变量的系数都很小，对模型影响也很小；最优子集选择法根据$C_p$准则选择出了与原模型一致的预测变量，且估计系数非常接近。
 
-
-```{r}
-```
-
-
-```{r}
-```
-
-
+***
 
 ### 第五周任务：P182 第9题
-
 
 
 
