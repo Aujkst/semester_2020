@@ -168,11 +168,119 @@ Lasso回归和最优子集选择的BIC和调整R方准则虽然多加入了变�
 
 ***
 
-### 第五周任务：P182 第9题
+### 第五周任务：P182 第9题 预测申请人数
+
+```{r 2a library, message=FALSE, warning=FALSE}
+library(ISLR)
+library(glmnet)
+library(pls)
+data = College
+data$Private <- as.numeric(data$Private) - 1
+```
+
+（a）把数据集分割为训练集和测试集
+```{r split data}
+set.seed(1)
+index <- sample(1:nrow(data), nrow(data)*0.7)
+
+trainData <- data[index, ]
+testData <- data[-index, ]
+```
+
+（b）拟合最小二乘模型，计算测试误差
+```{r 2b OLS}
+model_ols <- lm(Apps ~., data = trainData)
+predict_ols <- predict(model_ols, newdata = testData)
+mse_ols <- mean((testData$Apps - predict_ols)^2)
+
+mse_ols
+```
+
+（c）拟合岭回归模型，使用交叉验证选择参数$\lambda$的值，计算测试误差
+```{r 2c ridge}
+trainMatrix <- as.matrix(trainData)
+testMatrix <- as.matrix(testData)
+
+set.seed(1)
+model_ridge <- cv.glmnet(trainMatrix[, -2], trainMatrix[, 2], alpha = 0)
+lambda <- model_ridge$lambda.min
+predict_ridge <- predict(model_ridge, newx = testMatrix[, -2], s = lambda)
+mse_ridge <- mean((testData$Apps - predict_ridge)^2)
+
+cat("Ridge Regression", "\n MSE value: ", mse_ridge)
+```
+
+（d）拟合lasso模型，使用交叉验证选择参数$\lambda$的值，计算测试误差和非零系数估计值的个数
+```{r 2d lasso}
+set.seed(1)
+model_lasso <- cv.glmnet(trainMatrix[, -2], trainMatrix[, 2], alpha = 1)
+lambda <- model_lasso$lambda.min
+predict_lasso <- predict(model_lasso, newx = testMatrix[, -2], s = lambda)
+coef_lasso <- predict(model_lasso, s = lambda, type = "coefficients")[, 1]
+coef_lasso <- coef_lasso[coef_lasso != 0]
+mse_lasso <- mean((testData$Apps - predict_lasso)^2)
 
 
+cat("Lasso Model", "\n MSE value: ", mse_lasso, 
+    "\n num of coef: ", length(coef_lasso))
+```
+
+（e）拟合PCR模型，使用交叉验证选择参数M的值，计算测试误差和交叉验证选择的M
+
+```{r 2e PCR}
+set.seed(1)
+model_pcr <- pcr(Apps ~., data = trainData, scale = T, validation = "CV")
+validationplot(model_pcr, val.type = "MSEP")
+```
+
+```{r}
+predict_pcr <- predict(model_pcr, testData, ncomp = 16)
+mse_pcr <- mean((testData$Apps - predict_pcr)^2)
+
+cat("PCR", "\n M: ", 16, 
+    "\n MSE value: ", mse_pcr)
+```
+
+（f）拟合PLS模型，使用交叉验证选择参数M的值，计算测试误差和交叉验证选择的M
+
+```{r 2f pls}
+set.seed(1)
+model_pls <- plsr(Apps ~., data = trainData, scale = T, validation = "CV")
+validationplot(model_pls, val.type = "MSEP")
+```
+
+```{r}
+predict_pls <- predict(model_pls, testData, ncomp = 11 )
+mse_pls <- mean((testData$Apps - predict_pls)^2)
+
+cat("PCR", "\n M: ", 11, 
+    "\n MSE value: ", mse_pls)
+```
+
+（g）
+```{r 2g combine}
+# 合并MSE结果
+mse <- c(mse_ols, mse_ridge, mse_lasso, mse_pcr, mse_pls)
+names(mse) <- c("OLS", "Ridge", "Lasso", "PCR", "PLS")
+barplot(mse, main = "Mean Square Error")
+```
+```{r}
+# 计算R方
+r2fun <- function(predicts) {
+    y <- testData$Apps
+    return  (1 - mean((y - predicts)^2) / mean((y - mean(y))^2))
+}
+
+R_2 <- c(r2fun(predict_ols), r2fun(predict_ridge), r2fun(predict_lasso), 
+         r2fun(predict_pcr), r2fun(predict_pls))
+names(R_2) <- c("OLS", "Ridge", "Lasso", "PCR", "PLS")
+
+cat("\n R Square: \n", R_2, 
+    "\n\n MSE: \n", mse)
+```
 
 
+各个模型的R方都达到了90%以上，说明对申请人数的预测情况较好；从测试集的均方误差来看，模型之间的差别并不太大，其中PCR/PLS作为能够优化OLS的降维方法，其泛化误差并没有得到明显的降低，而采用增加正则化惩罚项的两个模型的优化效果比较明显，尤其是岭回归。
 
 
 
