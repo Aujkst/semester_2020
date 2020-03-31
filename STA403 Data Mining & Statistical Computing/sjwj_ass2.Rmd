@@ -284,7 +284,7 @@ $\hat{\mu} = 22.53281$。
 medv_mean_se <- sd(data$medv) / sqrt(length(data$medv))
 medv_mean_se
 ```
-可以认为，对于总体的一个随机样本，平均来说`medv`样本均值与其真值之间相差0.4088611。
+均值估计的标准误为0.4088611。
 
 (c) 用自助法估计$\hat{\mu}$的标准误差
 ```{r 3c}
