@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### 第五周任务：P182 第8题
 
-通过模拟数据集学习最有自己选择法
+通过模拟数据集学习最优子集选择法
 
 （a）使用`rnorm()`生成预测变量$X$和噪声向量$\varepsilon$。
 ```{r 1a}
