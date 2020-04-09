@@ -25,8 +25,8 @@ library(MASS)
 library(boot)
 library(splines)
 
-dis <- Boston[, 'dis']
-nox <- Boston[, 'nox']
+dis <- Boston[, "dis"]
+nox <- Boston[, "nox"]
 ```
 
 （a）拟合三次多项式回归，输出回归结果并画出数据点及拟合曲线。
@@ -85,6 +85,16 @@ plot(rss_cv, type = "b", ylab = "RSS",
 （d）拟合回归样条，输出自由度为4时候的结果，阐述选择结点的过程，画出拟合曲线
 
 ```{r boston splines}
+# 先使用50%分位点
+fit_splines <- lm(nox ~ bs(dis, df = 4))
+pre_splines <- predict(fit_splines, newdata = list(dis = dis_grid), se = TRUE)
+plot(dis, nox, col = "#a9a9a9a1")
+lines(dis_grid, pre_splines$fit, lwd = 2)
+lines(dis_grid, pre_splines$fit + 2 * pre_splines$se, lty = "dashed")
+lines(dis_grid, pre_splines$fit - 2 * pre_splines$se, lty = "dashed")
+
+# 每10%作为结点进行交叉验证
+rsssplines <- 
 
 ```
 
