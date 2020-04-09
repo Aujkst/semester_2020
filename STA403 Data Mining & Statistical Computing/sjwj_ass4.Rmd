@@ -1,0 +1,357 @@
+---
+title: STA403-1 第四次作业
+author: 金科 201756010
+output:
+  
+  html_document: default
+  word_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 第七周任务：P208 第9题
+
+使用Boston数据集，`dis`（到波士顿五个就业中心的加权平均距离）作为预测变量，`nox`（每十万分之一的氮氧化物颗粒浓度）作为响应变量
+
+```{r boston library}
+library(MASS)
+dis <- Boston[, 'dis']
+nox <- Boston[, 'nox']
+```
+
+（a）拟合三次多项式回归，输出回归结果并画出数据点及拟合曲线。
+
+```{r boston poly}
+fit_poly3 <- lm(nox ~ poly(dis, 3, raw = TRUE))
+coef_poly3 <- summary(fit_poly3)$coef
+row.names(coef_poly3)[2:4] <- 1:4
+
+coef_poly3
+```
+```{r }
+dislims <- range(Boston$dis)
+dis_grid <- seq(dislims[1], dislims[2], 0.1)
+pre_poly3 <- predict(fit_poly3, newdata = list(dis = dis_grid), se = TRUE)
+pre_poly3_bdry <- cbind(pre_poly3$fit - 2*pre_poly3$se.fit, 
+                        pre_poly3$fit + 2*pre_poly3$se.fit)
+
+# 绘图
+par()
+```
+
+（b）
+
+```{r boston}
+
+```
+
+（c）
+
+```{r boston}
+
+```
+
+（d）
+
+```{r boston}
+
+```
+
+（e）
+
+```{r boston}
+
+```
+
+（f）
+
+```{r boston}
+
+```
+
+### 第五周任务：P182 第8题
+
+通过模拟数据集学习最优子集选择法
+
+（a）使用`rnorm()`生成预测变量$X$和噪声向量$\varepsilon$。
+```{r 1a}
+set.seed(1)
+x <- rnorm(100)
+noise <- rnorm(100)
+```
+
+（b）依据以下模型产生长度为$n=100$的响应变量$Y$
+$$
+Y = \beta_0 + \beta_1X + \beta_2X^2 + \beta_3X^3 + \varepsilon
+$$
+其中，$\beta_0=9$、$\beta_1=2$、$\beta_2=5$和$\beta_3=13$是自己选的常数
+```{r 1b}
+y <- 9 + 2 * x + 5 * x^2 + 13 * x^3 + noise
+plot(x, y, xlab = "X", ylab = "Y")
+```
+
+
+（c）使用最优子集选择法，从包含$X$、$X^2$到$X^{10}$的模型中根据$C_p$、BIC和调整R方选出最优……
+```{R 1c, message=FALSE, warning=FALSE}
+library(leaps)
+library(ggplot2)
+```
+```{r }
+# 数据准备
+data <- data.frame(poly(x, 10, raw = T), y)
+
+# 提取信息绘图
+plotf <- function(result) {
+  rstBest <- summary(result)
+  pBestBIC <- ggplot(data.frame(M = 1:10, BIC = rstBest$bic), 
+                     aes(x = M, y = BIC)) +
+    geom_line() + geom_point() + 
+    labs(x = NULL, y = NULL, title = "BIC") + 
+    geom_point(aes(which.min(rstBest$bic), min(rstBest$bic)), 
+               col="red", size=3)
+  
+  pBestAdjR <- ggplot(data.frame(M = 1:10, AdjR2 = rstBest$adjr2), 
+                      aes(x = M, y = AdjR2)) + 
+    geom_line() + geom_point() + 
+    labs(x = NULL, y = NULL, title = "Adj R2") + 
+    geom_point(aes(which.max(rstBest$adjr2), max(rstBest$adjr2)), 
+               col="red", size=3)
+  
+  pBestCp <- ggplot(data.frame(M = 1:10, Cp = rstBest$cp),
+                    aes(x = M, y = Cp)) + 
+    geom_line()+ geom_point() + 
+    labs(x = NULL, y = NULL, title = "Cp") + 
+    geom_point(aes(which.min(rstBest$cp), min(rstBest$cp)), 
+               col = "red", size = 3)
+  
+  cowplot::plot_grid(pBestCp, pBestBIC, pBestAdjR, ncol = 3)
+}
+
+```
+```{r }
+# 最优子集选择法
+result_sub <- regsubsets(y ~ ., data = data, nvmax = 10)
+plotf(result_sub)
+```
+
+如上图所示，综合三项评价指标，可以认为当加入的预测变量数量为4时模型最优，并计算此时各系数的估计值
+```{r }
+coef(result_sub, 4)
+```
+
+（d）使用向前逐步选择法和向后逐步选择法重复（c）中步骤，比较答案
+```{r 1d}
+# 向前逐步选择法
+result_fwd <- regsubsets(y ~ ., data = data, nvmax = 10, method = "forward")
+plotf(result_fwd)
+```
+
+```{r }
+# 向后逐步选择法
+result_bwd <- regsubsets(y ~ ., data = data, nvmax = 10, method = "backward")
+plotf(result_bwd)
+```
+```{r }
+coef(result_fwd, 4)
+coef(result_bwd, 4)
+```
+
+向前逐步选择法与最优子集选择法的结果一致，向后逐步选择法将$X^5$项替换为了$X^9$，但是两者的系数均很小，可以认为对模型的影响微乎其微；其他参数与原模型系数非常接近。
+
+（e）使用lasso拟合数据，使用交叉验证选择参数$\lambda$的值
+```{r 1e, message=FALSE, warning=FALSE}
+library(glmnet)
+```
+```{r }
+grid <- 10^seq(-2, 2, length = 100)
+data <- as.matrix(data)
+result_lasso <- cv.glmnet(data[, -11], data[, 11], alpha = 1, lambda = grid)
+plot(result_lasso)
+```
+
+
+```{r}
+lambda_min <- result_lasso$lambda.min
+lasso_coef <- predict(result_lasso, type = "coefficients", s = lambda_min)[1:10, ]
+lasso_coef[lasso_coef != 0]
+```
+lasso回归剔除了$X^6$、$X^8$和$X^{10}$三项。
+```{r }
+lasso_coef[lasso_coef > 0.05]
+```
+不考虑变量系数远小于1的情况，lasso回归最终选择了$X$、$X^2$和$X^3$三项，与前述几种模型基本一致，且与原模型比较接近。
+
+```{r}
+names(result_lasso)
+```
+
+（f）现在依据模型$Y = \beta_0 + \beta_7X^7 + \varepsilon$产生响应变量$Y$，使用最优子集选择法和lasso
+
+```{r 1f bestsub}
+y <- 9 + 2.3 * x^7 + noise
+data <- data.frame(poly(x, 10, raw = T), y)
+
+# 最优子集选择法
+result_sub <- regsubsets(y ~ ., data = data, nvmax = 10)
+plotf(result_sub)
+```
+```{r 1f lasso}
+# lasso
+data <- as.matrix(data)
+result_lasso <- cv.glmnet(data[, -11], data[, 11], alpha = 1, lambda = grid)
+plot(result_lasso)
+```
+```{r }
+# 最优子集选择法系数
+coef <- lapply(c(1,2,4), function(x) coef(result_sub, x))
+
+# lasso回归系数
+lasso_min <- result_lasso$lambda.min
+coef_lasso <- predict(result_lasso, type = "coefficients", s = lasso_min)[1:10,]
+coef <- c(coef, list(coef_lasso[coef_lasso > 0.5]))
+
+names(coef) <- c(paste("Best Subset Selection", 1:3), "Lasso")
+```
+
+
+```{r }
+coef
+```
+Lasso回归和最优子集选择的BIC和调整R方准则虽然多加入了变量，但是这些无关变量的系数都很小，对模型影响也很小；最优子集选择法根据$C_p$准则选择出了与原模型一致的预测变量，且估计系数非常接近。
+
+***
+
+### 第五周任务：P182 第9题 预测申请人数
+
+```{r 2a library, message=FALSE, warning=FALSE}
+library(ISLR)
+library(glmnet)
+library(pls)
+data = College
+data$Private <- as.numeric(data$Private) - 1
+```
+
+（a）把数据集分割为训练集和测试集
+```{r split data}
+set.seed(1)
+index <- sample(1:nrow(data), nrow(data)*0.7)
+
+trainData <- data[index, ]
+testData <- data[-index, ]
+```
+
+（b）拟合最小二乘模型，计算测试误差
+```{r 2b OLS}
+model_ols <- lm(Apps ~., data = trainData)
+predict_ols <- predict(model_ols, newdata = testData)
+mse_ols <- mean((testData$Apps - predict_ols)^2)
+
+mse_ols
+```
+
+（c）拟合岭回归模型，使用交叉验证选择参数$\lambda$的值，计算测试误差
+```{r 2c ridge}
+trainMatrix <- as.matrix(trainData)
+testMatrix <- as.matrix(testData)
+
+set.seed(1)
+model_ridge <- cv.glmnet(trainMatrix[, -2], trainMatrix[, 2], alpha = 0)
+lambda <- model_ridge$lambda.min
+predict_ridge <- predict(model_ridge, newx = testMatrix[, -2], s = lambda)
+mse_ridge <- mean((testData$Apps - predict_ridge)^2)
+
+cat("Ridge Regression", "\n MSE value: ", mse_ridge)
+```
+
+（d）拟合lasso模型，使用交叉验证选择参数$\lambda$的值，计算测试误差和非零系数估计值的个数
+```{r 2d lasso}
+set.seed(1)
+model_lasso <- cv.glmnet(trainMatrix[, -2], trainMatrix[, 2], alpha = 1)
+lambda <- model_lasso$lambda.min
+predict_lasso <- predict(model_lasso, newx = testMatrix[, -2], s = lambda)
+coef_lasso <- predict(model_lasso, s = lambda, type = "coefficients")[, 1]
+coef_lasso <- coef_lasso[coef_lasso != 0]
+mse_lasso <- mean((testData$Apps - predict_lasso)^2)
+
+
+cat("Lasso Model", "\n MSE value: ", mse_lasso, 
+    "\n num of coef: ", length(coef_lasso))
+```
+
+（e）拟合PCR模型，使用交叉验证选择参数M的值，计算测试误差和交叉验证选择的M
+
+```{r 2e PCR}
+set.seed(1)
+model_pcr <- pcr(Apps ~., data = trainData, scale = T, validation = "CV")
+validationplot(model_pcr, val.type = "MSEP")
+```
+
+```{r}
+predict_pcr <- predict(model_pcr, testData, ncomp = 16)
+mse_pcr <- mean((testData$Apps - predict_pcr)^2)
+
+cat("PCR", "\n M: ", 16, 
+    "\n MSE value: ", mse_pcr)
+```
+
+（f）拟合PLS模型，使用交叉验证选择参数M的值，计算测试误差和交叉验证选择的M
+
+```{r 2f pls}
+set.seed(1)
+model_pls <- plsr(Apps ~., data = trainData, scale = T, validation = "CV")
+validationplot(model_pls, val.type = "MSEP")
+```
+
+```{r}
+predict_pls <- predict(model_pls, testData, ncomp = 11 )
+mse_pls <- mean((testData$Apps - predict_pls)^2)
+
+cat("PCR", "\n M: ", 11, 
+    "\n MSE value: ", mse_pls)
+```
+
+（g）
+```{r 2g combine}
+# 合并MSE结果
+mse <- c(mse_ols, mse_ridge, mse_lasso, mse_pcr, mse_pls)
+names(mse) <- c("OLS", "Ridge", "Lasso", "PCR", "PLS")
+barplot(mse, main = "Mean Square Error")
+```
+```{r}
+# 计算R方
+r2fun <- function(predicts) {
+    y <- testData$Apps
+    return  (1 - mean((y - predicts)^2) / mean((y - mean(y))^2))
+}
+
+R_2 <- c(r2fun(predict_ols), r2fun(predict_ridge), r2fun(predict_lasso), 
+         r2fun(predict_pcr), r2fun(predict_pls))
+names(R_2) <- c("OLS", "Ridge", "Lasso", "PCR", "PLS")
+
+cat("\n R Square: \n", R_2, 
+    "\n\n MSE: \n", mse)
+```
+
+
+各个模型的R方都达到了90%以上，说明对申请人数的预测情况较好；从测试集的均方误差来看，模型之间的差别并不太大，其中PCR/PLS作为能够优化OLS的降维方法，其泛化误差并没有得到明显的降低，而采用增加正则化惩罚项的两个模型的优化效果比较明显，尤其是岭回归。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
