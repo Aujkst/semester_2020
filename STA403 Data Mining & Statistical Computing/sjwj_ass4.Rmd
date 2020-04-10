@@ -63,7 +63,7 @@ rsslm <- function(n) {
 }
 
 rss <- sapply(1:10, rsslm)
-plot(rss, type = "b", ylab = "RSS",
+plot(1:10, rss, type = "b", ylab = "RSS",
      xlab = "Polynomial Degrees",
      main = "Residual Sum of Squares")
 ```
@@ -85,7 +85,7 @@ plot(rss_cv, type = "b", ylab = "RSS",
 
 （d）拟合回归样条，输出自由度为4时候的结果，阐述选择结点的过程，画出拟合曲线
 
-```{r boston splines}
+```{r boston splines, warning=FALSE}
 # 细分结点进行交叉验证
 fit_splines_cv <- function(x) {
   set.seed(1)
@@ -100,19 +100,23 @@ plot(dis_grid[flag], rss_splines_cv[flag],
      type = "b", xlab = "Knots", ylab = "RSS",
      main = "RSS (10-fold CV; single knot)")
 ```
+
 使用不同结点对应的模型误差如图所示，曲线存在两个极小值，分别在2和8附近，但是由于2附近的样本点屈指可数，容易产生过拟合，于是采用8附近的极小值作为结点
+
 ```{r }
 # 找到最优结点
 knot <- (dis_grid[dis_grid > 4])[which.min(rss_splines_cv[dis_grid > 4])]
 sprintf("The best knot is %f", knot)
 
 # 拟合模型并展示结果
-plot_splines <- function(model, grid = dis_grid, color0 = "#a9a9a9a1") {
+plot_splines <- function(model, grid = dis_grid,
+                         color0 = "#a9a9a9a1",
+                         color1 = "#2d2dda") {
   model <- predict(fit_splines, newdata = list(dis = grid), se = TRUE)
   plot(dis, nox, col = color0)
-  lines(grid, model$fit, lwd = 2)
-  lines(grid, model$fit + 2 * model$se, lty = "dashed")
-  lines(grid, model$fit - 2 * model$se, lty = "dashed")
+  lines(grid, model$fit, lwd = 2, col = color1)
+  lines(grid, model$fit + 2 * model$se, lty = "dashed", col = color1)
+  lines(grid, model$fit - 2 * model$se, lty = "dashed", col = color1)
 }
 
 fit_splines <- lm(nox ~ bs(dis, knots = knot))
@@ -121,17 +125,41 @@ plot_splines(fit_splines)
 
 （e）尝试一组不同的自由度拟合回归样条
 
-```{r boston e}
+```{r boston e, warning=FALSE}
+# 自由度为7
+fit <- lm(nox ~ bs(dis, df = 7))
+plot_splines(fit)
 
-for (i in 4:10) {
-  fit <- lm(nox ~ bs(dis, df = i))
-  plot_splines(fit)
+# 自由度为10
+fit <- lm(nox ~ bs(dis, df = 10))
+plot_splines(fit)
+
+# 画出RSS
+rss_splines_degree <- function(n) {
+  lm <- lm(nox ~ bs(dis, df = n))
+  return(sum(lm$residuals^2))
 }
 
+rss <- sapply(4:10, rss_splines_degree)
+plot(4:10, rss, type = "b", ylab = "RSS",
+     xlab = "Degrees of Freedom of Cubic Spline",
+     main = "Residual Sum of Squares")
 ```
 
-（f）
+（f）应用交叉验证误差或者其他方法选择合适的回归样条模型的自由度
 
-```{r boston f}
-
+```{r boston f, warning=FALSE}
+# 使用十折交叉验证
+rss_splines_degree_cv <- function(n) {
+  set.seed(1)
+  glm <- glm(nox ~ bs(dis, df = n))
+  return(cv.glm(data.frame(nox = nox, dis = dis), glm, K = 10)$delta[1])
+}
+rss <- sapply(4:10, rss_splines_degree_cv)
+plot(4:10, rss, type = "b", ylab = "RSS",
+     xlab = "Degrees of Freedom of Cubic Spline",
+     main = "Residual Sum of Squares (10-fold CV)")
 ```
+
+如图所示，经过十折交叉验证可知，对于该回归样条模型自由度为5相对比较合适。
+
