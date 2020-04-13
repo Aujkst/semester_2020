@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### 第七周任务：P208 第9题
+### 第七周：P208 第9题
 
 使用Boston数据集，`dis`（到波士顿五个就业中心的加权平均距离）作为预测变量，
 `nox`（每十万分之一的氮氧化物颗粒浓度）作为响应变量
@@ -163,3 +163,73 @@ plot(4:10, rss, type = "b", ylab = "RSS",
 
 如图所示，经过十折交叉验证可知，对于该回归样条模型自由度为5相对比较合适。
 
+===
+
+### 第八周：P208 第10题
+
+```{r warning = FALSE}
+library(ISLR)
+library(ggplot2)
+library(leaps)
+library(gam)
+data <- College
+```
+
+（a）将`州外学费`作为响应变量，其他变量作为预测变量。使用逐步回归得到一组合适的预测变量的子集
+
+```{r }
+plotf <- function(result, nvmax = 17) {
+  rst <- summary(result)
+  pbic <- ggplot(data.frame(M = 1:nvmax, BIC = rst$bic),
+    aes(x = M, y = BIC)) +
+    geom_line() + geom_point() +
+    labs(x = NULL, y = NULL, title = "BIC")
+    #geom_point(aes(which.min(rst$bic), min(rst$bic)), col = "red", size = 3)
+  padjr <- ggplot(data.frame(M = 1:nvmax, AdjR2 = rst$adjr2),
+    aes(x = M, y = AdjR2)) +
+    geom_line() + geom_point() +
+    labs(x = NULL, y = NULL, title = "Adj R2")
+    #geom_point(aes(which.max(rst$adjr2), max(rst$adjr2)), col = "red", size = 3)
+  pcp <- ggplot(data.frame(M = 1:nvmax, Cp = rst$cp),
+    aes(x = M, y = Cp)) +
+    geom_line() + geom_point() +
+    labs(x = NULL, y = NULL, title = "Cp")
+    #geom_point(aes(which.min(rst$cp), min(rst$cp)), col = "red", size = 3)
+  cowplot::plot_grid(pcp, pbic, padjr, ncol = 3)
+}
+
+# 向前逐步选择法
+result_fwd <- regsubsets(Outstate ~ ., data = data,
+                         nvmax = 17, method = "forward")
+plotf(result_fwd)
+```
+
+可以看出当预测变量增加到6个时，模型优化的效果开始变得不再明显，因此可以选取前六个预测变量作为预测变量的子集
+
+```{r }
+coef(result_fwd, 6)
+```
+
+（b）将观测数据分为训练集和测试集，在训练集上拟合GAM模型，将`州外学费`变量作为响应变量，逐步回归的结果作为预测变量，画出拟合结果，解释发现
+```{r }
+# 切分数据集
+set.seed(1)
+train_id <- sample(seq_len(nrow(data)), 0.7 * nrow(data))
+train_data <- data[train_id, ]
+test_data <- data[-train_id, ]
+gam_model <- gam(Outstate ~ Private + s(Room.Board, 3) + s(PhD, 3) + s(perc.alumni, 3) + s(Expend, 3) + s(Grad.Rate, 3), data = train_data)
+par(mfrow = c(2, 3))
+plot(gam_model, se = TRUE, col = "blue")
+```
+
+（c）在测试集上评价前面得到的模型，并解释结果
+```{r }
+pre_gam <- predict(gam_model, newdata = test_data)
+mse_gam <- mean((test_data$Outstate - pre_gam)^2)
+
+lm_model <- lm(Outstate ~ Private + Room.Board + PhD + perc.alumni + Expend + Grad.Rate, data = train_data)
+pre_lm <- predict(lm_model, newdata = test_data)
+mse_lm <- mean((test_data$Outstate - pre_lm)^2)
+
+cat("OLS MSE: ", mse_lm, "/n", "GAM MSE: ", mse_gam)
+```
