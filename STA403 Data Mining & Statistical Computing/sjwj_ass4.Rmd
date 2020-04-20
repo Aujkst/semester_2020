@@ -231,5 +231,6 @@ lm_model <- lm(Outstate ~ Private + Room.Board + PhD + perc.alumni + Expend + Gr
 pre_lm <- predict(lm_model, newdata = test_data)
 mse_lm <- mean((test_data$Outstate - pre_lm)^2)
 
-cat("OLS MSE: ", mse_lm, "/n", "GAM MSE: ", mse_gam)
+sprintf("OLS MSE: %.1f", mse_lm)
+sprintf("GAM MSE: %.1f", mse_gam)
 ```
