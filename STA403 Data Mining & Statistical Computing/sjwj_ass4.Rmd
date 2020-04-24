@@ -3,8 +3,8 @@ title: STA403-1 第四次作业
 author: 金科 201756010
 output:
   
-  html_document: default
   word_document: default
+  html_document: default
   pdf_document:
     includes:
       in_header: header.tex
@@ -68,12 +68,16 @@ plot(1:10, rss, type = "b", ylab = "RSS",
      main = "Residual Sum of Squares")
 ```
 
-（c）应用交叉验证误差或者其他方法选择合适的多项式模型拟合数据
+（c）应用交叉验证误差选择合适的多项式模型拟合数据
 
 ```{r boston}
 rsscv <- function(n) {
   set.seed(1)
   glm <- glm(nox ~ poly(dis, n, raw = TRUE))
+  # 画出拟合结果
+  # plot(glm)
+  
+  # 返回RSS
   return(cv.glm(data.frame(nox = nox, dis = dis), glm, K = 10)$delta[1])
 }
 
@@ -82,6 +86,12 @@ plot(rss_cv, type = "b", ylab = "RSS",
      xlab = "Polynomial Degrees",
      main = "Residual Sum of Squares (10-fold CV)")
 ```
+
+```{r }
+which.min(rss_cv)
+```
+通过十折交叉验证可知，当多项式模型的阶数为3时模型的RSS最小，比较合适。
+    
 
 （d）拟合回归样条，输出自由度为4时候的结果，阐述选择结点的过程，画出拟合曲线
 
@@ -135,33 +145,33 @@ fit <- lm(nox ~ bs(dis, df = 10))
 plot_splines(fit)
 
 # 画出RSS
-rss_splines_degree <- function(n) {
+rss <- sapply(4:10, function(n) {
   lm <- lm(nox ~ bs(dis, df = n))
   return(sum(lm$residuals^2))
-}
-
-rss <- sapply(4:10, rss_splines_degree)
+})
 plot(4:10, rss, type = "b", ylab = "RSS",
      xlab = "Degrees of Freedom of Cubic Spline",
      main = "Residual Sum of Squares")
 ```
 
+由图所示，阶数为10的时候模型RSS最小，但是基于训练模型得结果直接计算的RSS，阶数为10可能导致过拟合。
+
+
 （f）应用交叉验证误差或者其他方法选择合适的回归样条模型的自由度
 
 ```{r boston f, warning=FALSE}
 # 使用十折交叉验证
-rss_splines_degree_cv <- function(n) {
-  set.seed(1)
-  glm <- glm(nox ~ bs(dis, df = n))
-  return(cv.glm(data.frame(nox = nox, dis = dis), glm, K = 10)$delta[1])
-}
-rss <- sapply(4:10, rss_splines_degree_cv)
+rss <- sapply(4:10, function(n){
+    set.seed(1)
+    glm <- glm(nox ~ bs(dis, df = n))
+    return(cv.glm(data.frame(nox = nox, dis = dis), glm, K = 10)$delta[1])
+})
 plot(4:10, rss, type = "b", ylab = "RSS",
      xlab = "Degrees of Freedom of Cubic Spline",
      main = "Residual Sum of Squares (10-fold CV)")
 ```
 
-如图所示，经过十折交叉验证可知，对于该回归样条模型自由度为5相对比较合适。
+如图所示，经过十折交叉验证可知，可以看到从自由度为5开始，模型的RSS就不再有明显的变化，可以认为5是一个合适的自由度。
 
 ===
 
@@ -211,7 +221,7 @@ coef(result_fwd, 6)
 ```
 
 （b）将观测数据分为训练集和测试集，在训练集上拟合GAM模型，将`州外学费`变量作为响应变量，逐步回归的结果作为预测变量，画出拟合结果，解释发现
-```{r }
+```{r warning=FALSE}
 # 切分数据集
 set.seed(1)
 train_id <- sample(seq_len(nrow(data)), 0.7 * nrow(data))
@@ -234,3 +244,7 @@ mse_lm <- mean((test_data$Outstate - pre_lm)^2)
 sprintf("OLS MSE: %.1f", mse_lm)
 sprintf("GAM MSE: %.1f", mse_gam)
 ```
+
+广义线性模型的测试误差明显优于普通最小二乘。
+
+（d）由上图所示变量`Expand`有非线性关系。
