@@ -125,7 +125,7 @@ plot_splines <- function(model, grid = dis_grid,
   model <- predict(fit_splines, newdata = list(dis = grid), se = TRUE)
   plot(dis, nox, col = color0)
   lines(grid, model$fit, lwd = 2, col = color1)
-  lines(grid, model$fit + 2 * model$se, lty = "dashed", col = color1)
+  lines(grid, model$fit + 2 * model$se.fit, lty = "dashed", col = color1)
   lines(grid, model$fit - 2 * model$se, lty = "dashed", col = color1)
 }
 
@@ -177,7 +177,7 @@ plot(4:10, rss, type = "b", ylab = "RSS",
 
 ### 第八周：P208 第10题
 
-```{r warning = FALSE}
+```{r message=FALSE, warning=FALSE}
 library(ISLR)
 library(ggplot2)
 library(leaps)
@@ -247,4 +247,7 @@ sprintf("GAM MSE: %.1f", mse_gam)
 
 广义线性模型的测试误差明显优于普通最小二乘。
 
-（d）由上图所示变量`Expand`有非线性关系。
+（d）变量`Expand`有非线性关系。
+```{r }
+summary(gam_model)
+```
