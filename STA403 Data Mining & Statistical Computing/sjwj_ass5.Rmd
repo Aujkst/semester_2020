@@ -3,8 +3,8 @@ title: STA403-1 第五次作业
 author: 金科 201756010
 output:
   
-  word_document: default
   html_document: default
+  word_document: default
   pdf_document:
     includes:
       in_header: header.tex
@@ -124,14 +124,127 @@ sapply(list(Tree = tree_model,
 
 ### 第十周：P232第10题
 
+用提升法在`Hitters`数据集上预测`Salary`
+```{r message=FALSE, warning=FALSE}
+library(ISLR)
+data <- Hitters
+```
 
+（a）剔除缺失`Salary`信息的观测值，再对Salary作对数变换
+```{r }
+data <- data[-which(is.na(data$Salary)), ]
+# sum(is.na(data$Salary))   # = 0
+data$Salary <- log(data$Salary)
+```
 
+（b）创建一个有200个观测值的训练集，用余下的观测值建立测试集
+```{r }
+set.seed(1)
+index <- sample(dim(data)[1], 200)
+train_data <- data[index, ]
+test_data <- data[-index, ]
+```
 
+（c）用1000棵树对训练集执行提升法，选择不同的压缩参数\lambda
+```{r message=FALSE, warning=FALSE}
+library(gbm)
+```
+```{r }
+train_mse <- sapply(10^seq(-5, 0.1, 0.1), function(lambda) {
+  set.seed(1)
+  model <- gbm(Salary ~ ., data = train_data, 
+               distribution = "gaussian", 
+               n.trees = 1000, 
+               shrinkage = lambda)
+  predict <- predict(model, n.trees = 1000)
+  mean((predict - train_data$Salary)^2)
+})
 
+plot(10^seq(-5, 0.1, 0.1), train_mse, type = "b", 
+     xlab = "Lambda", ylab = "MSE", 
+     main = "Train set MSE")
+```
 
+（d）画出x轴上不同的压缩参数值和y轴上对应的测试均方误差
+```{r }
+test_mse <- sapply(10^seq(-5, 0, 0.1), function(lambda) {
+  set.seed(1)
+  model <- gbm(Salary ~ ., data = train_data, 
+               distribution = "gaussian", 
+               n.trees = 1000, 
+               shrinkage = lambda)
+  predict <- predict(model, newdata = test_data, n.trees = 1000)
+  mean((predict - test_data$Salary)^2)
+})
+```
+```{r }
+# 绘图
+plot(10^seq(-5, 0, 0.1), test_mse, type = "b", 
+     xlab = "Lambda", ylab = "MSE", 
+     main = "Test set MSE", pch = 20)
+```
 
+（e）比较提升法的测试均方误差与第3、6章中两种回归方法的测试均方误差
+```{r message=FALSE, warning=FALSE}
+library(glmnet)
+```
+```{r message=FALSE, warning=FALSE}
+# OLS
+model_lm <- lm(Salary ~ ., data = train_data)
+predict_lm <- predict(model_lm, newdata = test_data)
 
+# Lasso & Ridge
+train_X <- model.matrix(Salary ~ ., data = train_data)[, -1]
+test_X <- model.matrix(Salary ~ ., data = test_data)[, -1]
+train_Y <- train_data$Salary
+model_ridge <- glmnet(train_X, train_Y, alpha = 0, 
+                      lambda = 10^seq(-10, 10, 0.1))
+model_lasso <- glmnet(train_X, train_Y, alpha = 1, 
+                      lambda = 10^seq(-10, 10, 0.1))
+predict_ridge <- predict(model_ridge, 
+                         s = (cv.glmnet(train_X, 
+                                        train_Y, 
+                                        alpha = 0))$lambda.min, 
+                         newx = test_X)
+predict_lasso <- predict(model_lasso, 
+                         s = (cv.glmnet(train_X, 
+                                        train_Y, 
+                                        alpha = 1))$lambda.min, 
+                         newx = test_X)
+```
+```{r }
+c(sapply(list(OLS = predict_lm, 
+            Ridge = predict_ridge, 
+            Lasso = predict_lasso), 
+         function(x) {mean((x - test_data$Salary)^2)}), 
+  Boosting = min(test_mse))
+```
 
+高下立判，提升法的测试均方误差比另外几种回归方法低得多。
 
+（f）在提升法模型中，哪些变量是最重要的预测变量？
+```{r }
+bestLambda <- (10^seq(-5, 0, 0.1))[which.min(min(test_mse))]
+set.seed(1)
+boosting_model <- gbm(Salary ~ ., data = train_data, 
+             distribution = "gaussian", 
+             n.trees = 1000, 
+             shrinkage = bestLambda)
+summary(boosting_model)
+```
 
+可见`CAtBat`、`CRuns`和`CHits`是最重要的三个变量
+
+（g）现在对训练集使用袋装法。这种方法的测试均方误差是多少？
+```{r message=FALSE, warning=FALSE}
+library(randomForest)
+```
+```{r }
+set.seed(1)
+tree_bagging <- randomForest(Salary ~ ., data = train_data, 
+                             mtry = length(train_data) - 1, 
+                             importance = TRUE)
+predict_bagging <- predict(tree_bagging, newdata = test_data)
+mean((predict_bagging - test_data$Salary)^2)
+```
 
