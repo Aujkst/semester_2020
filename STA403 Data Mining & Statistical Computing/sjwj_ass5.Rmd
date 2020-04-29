@@ -1,0 +1,137 @@
+---
+title: STA403-1 第五次作业
+author: 金科 201756010
+output:
+  
+  word_document: default
+  html_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 第九周：P232第9题
+
+```{r message=FALSE, warning=FALSE}
+library(ISLR)
+data <- OJ
+```
+
+（a）创建一个包含800观测的随机样本的训练集，其余样本建立测试集
+
+```{r }
+set.seed(1023)
+index <- sample(1:nrow(data), 800)
+
+train_data <- data[index, ]
+test_data <- data[-index, ]
+```
+
+（b）对训练集建立一棵树，将`Purchase`作为响应变量，其余的变量作为预测变量。用函数`summary()`得到树的汇总统计数据，描述得到的结果。训练错误率是多少？树的终端结点数是多少？
+```{r message=FALSE, warning=FALSE}
+library(tree)
+# names(train_data)
+```
+
+```{r }
+tree_model <- tree(Purchase ~ ., data = train_data)
+summary(tree_model)
+```
+
+训练错误率为16.5%，一共有7个终端节点。
+
+（c）输入树对象名称以得到详细的输出文本。选择其中一个终端结点，解释得到的信息。
+```{r }
+tree_model
+```
+
+对于终端结点（7），对应的变量为`LoyalCH`，分裂条件为该变量的值大于0.745157，一共有272个观测被归入该结点，其中96.324%的响应为“CH”，因此预测的结果为CH，偏差为85.69。
+
+（d）对树画图并解释其结果
+```{r }
+plot(tree_model)
+text(tree_model, pretty = 0, cex = 0.7)
+```
+
+从图中可以看出变量`LoyalCH`是树中最重要的变量；而位于树左侧的分支，无论观测在该处被分向哪个终端结点，预测结果都为`MM`。
+
+（e）预测测试数据的响应值，并建立混淆矩阵比较真值和预测值。测试错误率是多少？
+```{r }
+# 混淆矩阵
+predict_Y <- predict(tree_model, newdata = test_data, type = "class")
+table <- table(predict_Y, test_data[, 1])
+table
+
+# 测试错误率
+sum(table[c(1,4)]) / sum(table)
+```
+
+（f）在训练集上用函数`cv.tree()`确定最优的树规模
+```{r }
+set.seed(1023)
+tree_cv_model <- cv.tree(tree_model, FUN = prune.misclass)
+tree_cv_model
+```
+
+当终端结点数为7时交叉错误率最低。
+
+（g）画图，x轴表示树的规模，y轴表示交叉验证的分类错误率。
+```{r }
+plot(tree_cv_model$size, tree_cv_model$dev, 
+     type = "b", xlab = "Tree Size", ylab = "Deviance")
+```
+
+（h）终端结点数为7时交叉验证分类错误率是最低的，但是树规模从4开始模型偏差的下降就不再明显。
+
+（i）建立一棵有4个终端结点的树。
+```{r }
+tree_model_prune <- prune.misclass(tree_model, best = 4)
+plot(tree_model_prune)
+text(tree_model_prune, pretty = 0, cex = 0.9)
+```
+
+（j）比较剪枝前后的训练错误率
+```{r message=FALSE, warning=FALSE}
+sapply(list(Tree = tree_model, 
+            Prume = tree_model_prune), 
+       function(model) {
+         pred <- predict(model, type = "class")
+         table <- table(pred, train_data[, 1])
+         sum(table[c(2, 3)]) / sum(table)
+       })
+```
+
+剪枝后的训练误差上升了0.0025。
+
+（k）比较剪枝前后的测试错误率
+```{r }
+sapply(list(Tree = tree_model, 
+            Prume = tree_model_prune), 
+       function(model) {
+         pred <- predict(model, newdata = test_data, type = "class")
+         table <- table(pred, test_data[, 1])
+         sum(table[c(2, 3)]) / sum(table)
+       })
+```
+
+虽然训练误差上升了，但是剪枝后的测试误差下降了0.0074074，说明树模型的泛化能力提高了。
+
+### 第十周：P232第10题
+
+
+
+
+
+
+
+
+
+
+
+
