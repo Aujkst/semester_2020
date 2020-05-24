@@ -1,0 +1,209 @@
+---
+title: STA403-1 第六次作业
+author: 金科 201756010
+output:
+  
+  html_document: default
+  word_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 第十一周：P256第3题
+
+用一个小型数据集构造来探索最大间隔分类器。
+
+```{r }
+data <- data.frame(X1 = c(3, 2, 4, 1, 2, 4, 4), 
+                   X2 = c(4, 2, 4, 4, 1, 3, 1), 
+                   Y = factor(c(1, 1, 1, 1, 2, 2, 2), 
+                              labels = c("Red", "Blue")))
+data
+```
+
+（a）在p=2维空间中，有n=7个观测。每个观测都有对应的类别标签。画出所有的观测。
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+```
+
+```{r }
+(ggplot(data = data, 
+       aes(x = X1, y = X2, colour = Y)) 
+ + geom_text(aes(y = X2 - 0.1, label = Y), colour = "black", size = 3) 
+ + geom_point())
+```
+
+（b）画出最优分割超平面，并且给出超平面的式子。
+
+最优分割超平面在观测#2、#3和#5、#6之间，即$(2,2),(4,4)$和$(2,1),(4,3)$，得到直线
+$$
+0.5 - X_1 + X_2 = 0
+$$
+
+```{r }
+(ggplot(data = data, 
+       aes(x = X1, y = X2, colour = Y)) 
+ + geom_text(aes(y = X2 - 0.1, label = Y), colour = "black", size = 3) 
+ + geom_point()
+ + geom_abline(intercept = -0.5, slope = 1))
+```
+
+（c）如果$0.5 - X_1 + X_2 > 0$，则把观测归为红色类，否则为蓝色类。
+
+（d）指出最大间隔超平面的间隔
+
+```{r }
+(ggplot(data = data, 
+       aes(x = X1, y = X2, colour = Y)) 
+ + geom_text(aes(y = X2 - 0.1, label = Y), colour = "black", size = 3) 
+ + geom_point()
+ + geom_abline(intercept = -0.5, slope = 1)
+ + geom_abline(intercept = -1, slope = 1, lty = 2)
+ + geom_abline(intercept = 0, slope = 1, lty = 2))
+```
+
+（e）指出最大间隔分类器的支持向量。
+
+$$(2,\,2),\quad(4,\,4),\quad(2,\,1),\quad(4,\,3)$$
+
+```{r }
+(ggplot(data = data, 
+       aes(x = X1, y = X2, colour = Y)) 
+ + geom_text(aes(y = X2 - 0.1, label = Y), colour = "black", size = 3) 
+ + geom_point()
+ + geom_abline(intercept = -0.5, slope = 1)
+ + geom_abline(intercept = -1, slope = 1, lty = 2)
+ + geom_abline(intercept = 0, slope = 1, lty = 2)
+ + geom_point(aes(x = 2, y = 2), shape = 13, color = "black", size = 10)
+ + geom_point(aes(x = 4, y = 4), shape = 13, color = "black", size = 10)
+ + geom_point(aes(x = 2, y = 1), shape = 13, color = "black", size = 10)
+ + geom_point(aes(x = 4, y = 3), shape = 13, color = "black", size = 10))
+```
+
+（f）观测#7的轻微移动仍然在最大间隔分类器之外，因此不会对超平面产生影响。
+
+（g）如图灰色的线就不是最优的分割超平面，$0.8 - X_1 + X_2 = 0$
+
+```{r }
+(ggplot(data = data, 
+       aes(x = X1, y = X2, colour = Y)) 
+ + geom_text(aes(y = X2 - 0.1, label = Y), colour = "black", size = 3) 
+ + geom_point()
+ + geom_abline(intercept = -0.5, slope = 1)
+ + geom_abline(intercept = -0.8, slope = 1, color = "gray"))
+```
+
+（h）如图，加上该额外观测点后就不能再被一个超平面分割。
+```{r }
+(ggplot(data = data, 
+       aes(x = X1, y = X2, colour = Y)) 
+ + geom_text(aes(y = X2 - 0.1, label = Y), colour = "black", size = 3) 
+ + geom_point()
+ + geom_abline(intercept = -0.5, slope = 1)
+ + geom_point(aes(x = 2, y = 3), color = "blue", size = 5))
+```
+
+### 第十二周：p257第7题
+
+```{r message=FALSE, warning=FALSE}
+library(ISLR)
+data = Auto
+```
+
+（a）创建二分变量
+```{r }
+level <- data$mpg > median(data$mpg)
+data$mpglevel = as.factor(level)
+```
+
+（b）使用支持向量分类器拟合数据，采用不同的`cost`值
+```{r message=FALSE, warning=FALSE}
+library(e1071)
+```
+```{r }
+set.seed(1)
+model_svm_linear = tune(svm, mpglevel ~ ., 
+                data = data, kernel = "linear", 
+                ranges = list(cost = c(0.01, 0.1, 1, 5, 10, 100)))
+summary(model_svm_linear)
+```
+
+从10折交叉验证的验证误差结果可以看出，`cost`为1时最佳。
+
+（c）重复（b），使用径向核函数和多项式核函数的SVM，`gamma`、`degree`和`cost`分别取不同的值
+```{r }
+# 径向核函数SVM
+
+set.seed(1)
+model_svm_radial = tune(svm, mpglevel ~ ., 
+                data = data, kernel = "radial", 
+                ranges = list(cost = c(0.1, 1, 5, 10), 
+                              gamma = c(0.01, 0.1, 1, 5, 10, 100)))
+
+summary(model_svm_radial)
+```
+
+使用径向核函数时，十折交叉验证结果最优的参数为`cost`$=10$和`gamma`$=0.01$；
+
+```{r }
+# 多项式核函数SVM
+
+set.seed(1)
+model_svm_poly = tune(svm, mpglevel ~ ., 
+                data = data, kernel = "polynomial", 
+                ranges = list(cost = c(0.1, 1, 5, 10), 
+                              degree = c(2, 3, 4)))
+
+summary(model_svm_poly)
+```
+
+使用多项式核函数时，十折交叉验证结果最优的参数为`cost`$=10$和`degree`$=2$。
+
+（d）画一些图说明结论
+
+```{r }
+svm_linear = svm(mpglevel ~ ., data = data, 
+                 kernel = "linear", cost = 1)
+
+svm_poly = svm(mpglevel ~ ., data = data, 
+               kernel = "polynomial", cost = 10, degree = 2)
+
+svm_radial = svm(mpglevel ~ ., data = data, 
+                 kernel = "radial", cost = 10, gamma = 0.01)
+```
+```{r }
+name <- names(data)[!(names(data) %in% c("mpg", "mpglevel", "name"))]
+
+(sapply(name, function(x) {
+    plot(svm_linear, data, as.formula(paste("mpg ~ ", x, sep = "")))
+}))
+```
+```{r }
+(sapply(name, function(x) {
+    plot(svm_poly, data, as.formula(paste("mpg ~ ", x, sep = "")))
+}))
+```
+```{r }
+(sapply(name, function(x) {
+    plot(svm_radial, data, as.formula(paste("mpg ~ ", x, sep = "")))
+}))
+```
+
+
+
+
+
+
+
+
+
+
+
