@@ -1,0 +1,116 @@
+---
+title: "第三次作业：案例分析（一）"
+author: 金科 201756010
+output:
+  
+  word_document: default
+  html_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 美国月度失业率数据建模分析
+
+```{r message=FALSE, warning=FALSE}
+require(quantmod)
+getSymbols("UNRATE", src = "FRED")
+chartSeries(UNRATE)
+rate = as.numeric(UNRATE[ ,1])
+```
+
+从图中可以观察到原序列有一定的上升趋势，因此需要通过差分进一步观察；同时由于经济体失业率可能存在周期性变化的规律，曲线所呈现这样的周期大致为4年，因此选定48步的月度差分。
+
+受COVID-19的影响，最新一个月的失业率激增至14.7%，假设疫情对就业造成的冲击仅发生在4月，并且对失业率的影响属于独立的叠加效果，失业率本身的变化趋势不受其干扰，因此可以先将2020年4月的数据除去，预测完成后再将疫情冲击的部分还原回来。
+
+```{r }
+len <- length(rate)
+```
+```{R message=FALSE, warning=FALSE}
+x <- ts(rate, start = c(1948, 1), frequency = 12)
+
+# 暂时删去2020年4月的数据
+x1 <- ts(rate[-len], start = c(1948, 1), frequency = 12)
+
+library(ggplot2)
+ggplot(data.frame(Time = time(x1), Rate = rate[-len]), 
+       aes(x = Time, y = Rate)) + geom_line()
+```
+
+对序列进行1阶48步差分，得到的时序图如下所示：
+```{r }
+x_dif <- diff(diff(x1), 48)
+plot(x_dif)
+```
+
+可以看出差分之后序列的长期趋势已经被剔除，可以进一步建模。
+
+首先对进行模型识别，绘制序列的自相关系数图（ACF）和偏自相关系数图（PACF）
+```{r }
+acf(x_dif)
+pacf(x_dif)
+```
+
+自相关系数前9阶都落在两倍标准差之外，而偏自相关系数呈现拖尾，因此将模型确定为`ARIMA(0,(1,48),9)`模型。拟合结果如下所示：
+
+```{r }
+fit <- arima(x1, order = c(0, 1, 9), 
+             seasonal = list(order = c(0,1,0), period = 48))
+fit
+```
+
+对拟合结果进行**Ljung-Box**白噪声检验
+```{r }
+for(i in 1:2) 
+  print(Box.test(fit$residual, lag = 6*i))
+```
+
+在白噪声检验中模型滞后6阶和12阶均不显著，可以认为残差序列为白噪声序列，因此在接下来的预测中使用其进行建模。
+
+根据模型拟合输出结果，得到的拟合模型为
+$$
+(1-B)(1-B^{48})x_t = 
+$$
+$$
+\big(1 + 0.0300B+0.1707B^2+0.1656B^3+0.1584B^4+0.1909B^5
+$$
+$$
++0.1317B^6+0.0957B^7+0.1684B^8  +0.0964B^9\big)\varepsilon_t
+$$
+其中$ \varepsilon_t \sim N(0, 0.06955)$。
+
+对2020年4月之后的6个月份进行预测。
+
+```{r message=FALSE, warning=FALSE}
+library(forecast)
+
+pred <- forecast(fit, h = 7, level = c(99.5))
+plot(pred, main = "")
+plot(pred, xlim = c(2018, 2021), main = "")
+```
+
+将新冠疫情的冲击还原，得到最后的预测曲线
+```{r }
+pred_lower <- as.vector(pred$lower)
+pred_lower <- pred_lower + rate[len] - pred$mean[1]
+pred$lower <- ts(pred_lower, start = c(2020, 4), frequency = 12)
+
+pred_upper <- as.vector(pred$upper)
+pred_upper <- pred_upper + rate[len] - pred$mean[1]
+pred$upper <- ts(pred_upper, start = c(2020, 4), frequency = 12)
+
+pred_mean <- as.vector(pred$mean)
+pred_mean <- pred_mean + rate[len] - pred$mean[1]
+pred$mean <- ts(pred_mean, start = c(2020, 4), frequency = 12)
+
+pred
+plot(pred, xlim = c(2018, 2021), main = "")
+```
+
+如果政府没有对疫情带来的负面冲击施加特别干预，失业率会一直高居15%左右的水平，产生不可预计的民生问题。
