@@ -1,0 +1,111 @@
+---
+title: "第四作业：案例分析（二）"
+author: 金科 201756010
+output:
+  
+  pdf_document:
+    includes:
+      in_header: ..\header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+要求：利用R软件分析Intel公司股票的月对数收益率数据，构建波动率模型并做向前5步预测，要求包含建模过程与代码。数据文件见附件，其中`date`表示日期，`intc`变量即是要分析的对数收益率序列。
+
+首先读取数据并进行初步的描述统计，
+```{r }
+w <- read.table("m-intel.txt", sep = "", header = TRUE)
+x <- ts(w$intc, start = c(1973, 01), frequency = 12)
+```
+```{r }
+stat <- psych::describe(x)
+stat
+```
+
+绘制时序图，如（a）所示，可以看出序列围绕着稳定的均值水平，并无明显的趋势，但是其波动性却明显呈现出聚集性的特点；图（b）与同均值方差的正态分布密度曲线相比较可以看出，月对数收益率具有尖峰的特征。
+```{r }
+par(mfrow = c(2, 1), mar = c(2,2,2,1), oma = c(1,0.5,1,2))
+plot(x, col = "#0061bd", main = "(a)")
+d <- density(x)
+plot(d, col = "#646464", main = "(b)", lwd = 2)
+s2 <- seq(from = -4, to = 4, length.out = 10000)
+lines(s2, dnorm(s2, mean = stat$mean, sd = stat$sd), col = "black", lwd = 2)
+```
+
+接下来拟合均值方程，作ACF、PACF图如下所示，从两幅图中都可以看出呈现拖尾的情形，因此可以选择**ARMA(1,1)**模型。
+```{r }
+par(mfrow = c(2, 1), mar = c(4,4,0.5,1), oma = c(1,1,1,2))
+acf(x, main = "")
+pacf(x, main = "")
+```
+
+拟合**ARMA(1,1)**模型，并对残差序列进行白噪声检验，原假设\$H_0:\,\$序列为白噪声，输出对应的P值
+```{r }
+x.fit <- arima(x, order = c(1, 0, 1))
+
+sapply(1:6, function(i) {
+  Box.test(x.fit$residual, type = "Ljung-Box", lag = i) $ p.value
+})
+```
+
+可以认为**ARMA(1,1)**基本提取了序列中的自相关结构。
+
+接下来检验对数收益率序列是否包含ARCH效应，绘制残差平方序列的ACF图和PACF图
+```{r }
+par(mfrow = c(2, 1), mar = c(4,4,0.5,1), oma = c(1,1,1,2))
+acf(x.fit$residuals^2, main = "")
+pacf(x.fit$residuals^2, main = "")
+```
+
+对残差平方序列进行Portmantea Q检验，原假设\$H_0:\,\$残差平方序列纯随机，即方差齐性，P值结果如下
+```{r }
+sapply(1:6, function(i) {
+  Box.test(x.fit$residual^2, type = "Ljung-Box", lag = i) $ p.value
+})
+```
+
+前六阶检验的P值都特别小，说明存在低阶的显著的自相关性，存在ARCH效应。根据ACF和PACF图的情况，将波动方程定阶为**GARCH(1,1)**，结合均值方程，模型为**ARMA(1,1)+GARCH(1,1)**
+```{r message=FALSE, warning=FALSE}
+library(fGarch)
+```
+```{r }
+m1 <- garchFit(intc ~ arma(1, 1) + garch(1, 1), data = w, trace = FALSE)
+summary(m1)
+```
+其中ar1、ma1项的系数并不显著，说明均值方程相对整个模型波动的影响并不明显；从序列原始的ACF图也可以认为其自相关系数0阶截尾，均值方程为常数。因此将模型调整为**GARCH(1,1)**查看结果
+```{r }
+m1 <- garchFit(intc ~ garch(1, 1), data = w, trace = FALSE)
+summary(m1)
+```
+此时所有参数都表现为显著，并且`AIC`和`BIC`的数值也有所下降。
+
+对残差项进行Kolmogorov-Smirnov正态性检验，原假设\$H_0:\,\$残差序列服从正态分布。
+```{r message=FALSE, warning=FALSE}
+ks.test(x.fit$residuals, 
+        dnorm(s2, mean = stat$mean, sd = stat$sd),
+        alternative = c("two.sided", "less", "greater"),
+        exact = NULL)
+```
+P值几乎接近0，因此误差项分布显著异于正态分布，设定为t分布重新拟合模型
+```{r }
+m1 <- garchFit(intc ~ garch(1, 1), data = w,
+               cond.dist = "std", trace = FALSE)
+summary(m1)
+```
+
+至此模型`AIC`和`BIC`的结果最小，模型效果达到相对最优。最后的模型为
+$$
+x_t = 0.02191+\varepsilon_t,\quad
+\sigma^2_t = 0.00148+0.1037\varepsilon_{t-1}+0.8086\sigma_{t-1}^2
+$$
+进行向前五步预测
+```{r }
+pre <- predict(m1, 5)
+pre
+```
