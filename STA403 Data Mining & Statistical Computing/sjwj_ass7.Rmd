@@ -1,0 +1,121 @@
+---
+title: STA403-1 第七次作业
+author: 金科 201756010
+output:
+  
+  word_document: default
+  html_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
+    keep_tex: yes   
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### P287第2题
+
+在该题中，需要手动对包含2个变量的6个观测进行K=2的K均值聚类
+```{r }
+data <- data.frame(list(X1 = c(1, 1, 0, 5, 6, 4), 
+                        X2 = c(4, 3, 4, 1, 2, 0)))
+data
+```
+
+（a）绘出这些观测的散点图
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+```
+```{r }
+ggplot(data = data, aes(x = X1, y = X2)) + geom_point(size = 4)
+```
+
+（b）随机给每个观测一个类标签，同时记录下每个观测的类标签
+```{r }
+data$label <- sample(c(1, 2), size = 6, replace = TRUE)
+data
+```
+
+（c）计算每个类的类中心
+```{r }
+centroid <- sapply(1:2, function(x){
+  x1 <- mean(data$X1[data$label == x])
+  x2 <- mean(data$X2[data$label == x])
+  c(X1 = x1, X2 = x2)
+})
+centroid
+```
+
+（d）用欧氏距离作为相异度指标，将每个观测分配到距离最近的类中心所在的类中
+```{r }
+data$step1 <- sapply(1:6, function(x){
+  d1 <- sqrt((data[x, 1] - centroid[1, 1])^2 + (data[x, 2] - centroid[2, 1])^2)
+  d2 <- sqrt((data[x, 1] - centroid[1, 2])^2 + (data[x, 2] - centroid[2, 2])^2)
+  (d2 < d1) + 1
+})
+
+data
+```
+
+（e）重复（c）（d），直到得到的类标签不变为止
+```{r }
+centroid2 <- sapply(1:2, function(x){
+  x1 <- mean(data$X1[data$step1 == x])
+  x2 <- mean(data$X2[data$step1 == x])
+  c(X1 = x1, X2 = x2)
+})
+data$step2 <- sapply(1:6, function(x){
+  d1 <- sqrt((data[x, 1]-centroid2[1, 1])^2 + (data[x, 2]-centroid2[2, 1])^2)
+  d2 <- sqrt((data[x, 1]-centroid2[1, 2])^2 + (data[x, 2]-centroid2[2, 2])^2)
+  (d2 < d1) + 1
+})
+data
+```
+
+（f）在（a）部分所绘的图中，根据每个观测的类标签给观测上色
+```{r }
+data$step2 <- as.factor(data$step2)
+```
+```{r }
+ggplot(data = data, aes(x = X1, y = X2, colour = step2)) + geom_point(size = 4) 
+```
+
+******
+
+### P289第8题
+
+用两种方法计算`USArrests`数据的PVE
+```{r message=FALSE, warning=FALSE}
+library(ISLR)
+data <- USArrests
+```
+
+（a）用`prcomp()`函数的`sdev`输出结果计算PVE
+```{r }
+pr_out <- prcomp(data, scale = TRUE)
+pve1 <- pr_out$sdev^2 / sum(pr_out$sdev^2)
+pve1
+```
+
+（b）直接应用等式（10.8），使用主成分载荷代入得到PVE
+```{r }
+data_scale <- scale(data)
+
+pve2 <- apply(pr_out$x, MARGIN = 2, 
+              function(x){ sum(x^2) / sum(data_scale^2) })
+pve2
+```
+
+
+
+
+
+
+
+
+
+
+
