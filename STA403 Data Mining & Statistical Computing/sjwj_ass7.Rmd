@@ -3,8 +3,8 @@ title: STA403-1 第七次作业
 author: 金科 201756010
 output:
   
-  word_document: default
   html_document: default
+  word_document: default
   pdf_document:
     includes:
       in_header: header.tex
@@ -17,6 +17,45 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ### P287第2题
+（a）最长距离法、系统聚类的谱系图
+```{r }
+d <- dist(matrix(c(0, 0.3, 0.4, 0.7, 
+                   0.3, 0, 0.5, 0.8, 
+                   0.4, 0.5, 0.0, 0.45,
+                   0.7, 0.8, 0.45, 0.0), nrow = 4))
+
+hc_plot <- function(dist = d, method = "complete", labels = NULL){
+    hc <- hclust(dist, method = method)
+    plot(hc, main = paste0(method, " linkage"),
+         labels = labels, xlab = "", sub = "")
+}
+
+hc_plot()
+```
+
+（b）用最短距离法
+```{r }
+hc_plot(method = "single")
+```
+
+（c）通过切割（a），第1、2个观测为一类，3和4为另一类。
+```{r }
+cutree(hclust(d, "complete"), 2)
+```
+
+（d）通过切割（b），第1、2、3个观测为一类，第4个观测为另一类。
+```{r }
+cutree(hclust(d, "single"), 2)
+```
+
+（e）交换（a）叶子使谱系图的含义不变
+```{r }
+hc_plot(labels = c(2, 1, 4, 3))
+```
+
+******
+
+### P287第3题
 
 在该题中，需要手动对包含2个变量的6个观测进行K=2的K均值聚类
 ```{r }
